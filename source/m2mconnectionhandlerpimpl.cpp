@@ -22,7 +22,7 @@
 #include "threadwrapper.h"
 #include "mbed_error.h"
 
-#include "NetworkInterface.h"
+#include "NetworkStack.h"
 #include "UDPSocket.h"
 #include "TCPSocket.h"
 #include "mbed-trace/mbed_trace.h"
@@ -119,7 +119,7 @@ bool M2MConnectionHandlerPimpl::resolve_server_address(const String& server_addr
                 success = 0 == _security_impl->connect(_base);
                 if( success ) {
                     _use_secure_connection = true;
-                    _socket->set_timeout(0); // Block for all calls
+                    _socket->set_blocking(true); // Block for all calls
                 }
             }
         }
@@ -294,8 +294,13 @@ int M2MConnectionHandlerPimpl::receive_from_socket(unsigned char *buf, size_t le
        _binding_mode == M2MInterface::TCP_QUEUE) {
         recv = ((TCPSocket*)_socket)->recv(buf, len);
     } else {
-        tr_debug("M2MConnectionHandlerPimpl::receive_from_socket timeout value %ld", timeout);
-        _socket->set_timeout(timeout);
+        if (0 == timeout) {
+            tr_debug("M2MConnectionHandlerPimpl::receive_from_socket timeout off");
+            _socket->set_blocking(true);
+        } else {
+            tr_debug("M2MConnectionHandlerPimpl::receive_from_socket timeout value %ld", timeout);
+            _socket->set_timeout(timeout);
+        }
         recv = ((UDPSocket*)_socket)->recvfrom(NULL,buf, len);
         if(NSAPI_ERROR_WOULD_BLOCK == recv) {
             recv = -0x6800; //MBED_TLS_SSL_TIMEOUT error code
@@ -313,5 +318,5 @@ void M2MConnectionHandlerPimpl::handle_connection_error(int /*error*/)
 void M2MConnectionHandlerPimpl::set_platform_network_handler(void *handler)
 {
     tr_debug("M2MConnectionHandlerPimpl::set_platform_network_handler");
-    _network_interface = (NetworkInterface*)handler;
+    _network_interface = (NetworkStack*)handler;
 }
