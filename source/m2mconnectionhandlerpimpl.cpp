@@ -22,7 +22,7 @@
 #include "threadwrapper.h"
 #include "mbed_error.h"
 
-#include "NetworkInterface.h"
+#include "NetworkStack.h"
 #include "UDPSocket.h"
 #include "TCPSocket.h"
 #include "mbed-trace/mbed_trace.h"
@@ -313,5 +313,5 @@ void M2MConnectionHandlerPimpl::handle_connection_error(int /*error*/)
 void M2MConnectionHandlerPimpl::set_platform_network_handler(void *handler)
 {
     tr_debug("M2MConnectionHandlerPimpl::set_platform_network_handler");
-    _network_interface = (NetworkInterface*)handler;
+    _network_interface = (NetworkStack*)handler;
 }

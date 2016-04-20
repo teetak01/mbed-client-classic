@@ -162,7 +162,7 @@ private:
     bool                                        _running;
     rtos::Thread                                *_listen_thread;
     unsigned char                               _recv_buffer[1024];
-    NetworkInterface                            *_network_interface;  //doesn't own
+    NetworkStack                                *_network_interface;  //doesn't own
     SocketEvent                                 _socket_event;
     SocketAddress                               *_socket_address;
 
