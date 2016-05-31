@@ -290,7 +290,6 @@ int M2MConnectionHandlerPimpl::send_to_socket(const unsigned char *buf, size_t l
     if(is_tcp_connection()) {
         size = ((TCPSocket*)_socket)->send(buf,len);
     } else {
-        _socket_event = ESocketWritten;
         size = ((UDPSocket*)_socket)->sendto(*_socket_address,buf,len);
     }
     tr_debug("M2MConnectionHandlerPimpl::send_to_socket size - %d", size);
