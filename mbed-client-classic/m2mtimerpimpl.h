@@ -87,8 +87,6 @@ private:
     void start();
     void cancel();
 
-    void timer_expired();
-
 private:
     M2MTimerObserver&   _observer;
     bool                _single_shot;
