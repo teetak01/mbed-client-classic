@@ -90,7 +90,7 @@ void M2MTimerPimpl::start_dtls_timer(uint64_t intermediate_interval, uint64_t to
     _status = 0;
     _type = type;
     _running = true;
-    _timer = new RtosTimer(timer_run_c, osTimerOnce, (void*)this);
+    _timer = new RtosTimer(timer_run_c, osTimerOnce, (void*)this);    
 }
 
 void M2MTimerPimpl::stop_timer()
@@ -103,7 +103,9 @@ void M2MTimerPimpl::stop_timer()
 
 void M2MTimerPimpl::timer_expired()
 {
-    _observer.timer_expired(_type);
+    if(_running) {
+        _observer.timer_expired(_type);
+    }
 }
 
 void M2MTimerPimpl::timer_run()
@@ -113,7 +115,8 @@ void M2MTimerPimpl::timer_run()
             delete _final_thread;
             _final_thread = NULL;
         }
-        _final_thread = rtos::create_thread<M2MTimerPimpl, &M2MTimerPimpl::timer_expired>(this);
+        _final_thread = rtos::create_thread<M2MTimerPimpl, &M2MTimerPimpl::timer_expired>(this,osPriorityNormal, 4*1250);
+
     } else {
         if(_status == 0) {
             _status++;
@@ -126,7 +129,7 @@ void M2MTimerPimpl::timer_run()
                 delete _final_thread;
                 _final_thread = NULL;
             }
-            _final_thread = rtos::create_thread<M2MTimerPimpl, &M2MTimerPimpl::timer_expired>(this);
+            _final_thread = rtos::create_thread<M2MTimerPimpl, &M2MTimerPimpl::timer_expired>(this);            
         }
     }
 }
