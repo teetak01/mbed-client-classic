@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 ARM Limited. All rights reserved.
+ * Copyright (c) 2015-2016 ARM Limited. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  * Licensed under the Apache License, Version 2.0 (the License); you may
  * not use this file except in compliance with the License.
@@ -13,18 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <assert.h>
+#include <time.h>
+
 #include "mbed-client-classic/m2mtimerpimpl.h"
 #include "mbed-client/m2mtimerobserver.h"
-#include <cstdio>
+#include "mbed-client/m2mvector.h"
+
+#include "eventOS_event.h"
+#include "eventOS_event_timer.h"
+#include "net_interface.h" // unexpected include, but that is where ARM_LIB_SYSTEM_TIMER_EVENT lives
 #include "mbed-trace/mbed_trace.h"
 
 #define TRACE_GROUP "mClt"
 
-void timer_run_c( void const* arg)
+int8_t M2MTimerPimpl::_tasklet_id = -1;
+
+int8_t M2MTimerPimpl::_next_timer_id = 1;
+
+static m2m::Vector<M2MTimerPimpl*> timer_impl_list;
+
+extern "C" void tasklet_func(arm_event_s *event)
 {
-    if(arg) {
-        M2MTimerPimpl *pimpl = (M2MTimerPimpl*)arg;
-        pimpl->timer_run();
+    // skip the init event as there will be a timer event after
+    if (event->event_type == ARM_LIB_SYSTEM_TIMER_EVENT) {
+
+        int timer_count = timer_impl_list.size();
+        for (int index = 0; index < timer_count; index++) {
+            M2MTimerPimpl* timer = timer_impl_list[index];
+            if (timer->get_timer_id() == event->event_id) {
+
+                timer->timer_expired();
+                break;
+            }
+        }
     }
 }
 
@@ -36,32 +59,47 @@ M2MTimerPimpl::M2MTimerPimpl(M2MTimerObserver& observer)
   _intermediate_interval(0),
   _total_interval(0),
   _status(0),
-  _dtls_type(false),
-  _final_thread(0),
-  _timer(0)
+  _dtls_type(false)
 {
 
+    if (_tasklet_id < 0) {
+        _tasklet_id = eventOS_event_handler_create(tasklet_func, ARM_LIB_SYSTEM_TIMER_EVENT);
+        assert(_tasklet_id >= 0);
+    }
+
+    // XXX: this wraps over quite soon
+    _timer_id = M2MTimerPimpl::_next_timer_id++;
+
+    timer_impl_list.push_back(this);
 }
 
 M2MTimerPimpl::~M2MTimerPimpl()
 {
-    stop_timer();
-    if(_timer) {
-        delete _timer;
-    }
-    if(_final_thread) {
-        delete _final_thread;
+    // cancel the timer request, if any is pending
+    cancel();
+
+    // there is no turning back, event os does not have eventOS_event_handler_delete() or similar,
+    // so the tasklet is lost forever. Same goes with timer_impl_list, which leaks now memory.
+
+    // remove the timer from object list
+    int timer_count = timer_impl_list.size();
+    for (int index = 0; index < timer_count; index++) {
+
+        const M2MTimerPimpl* timer = timer_impl_list[index];
+        if (timer->_timer_id == _timer_id) {
+
+            timer_impl_list.erase(index);
+            break;
+        }
     }
 }
 
-void M2MTimerPimpl::start_timer(uint64_t interval,
-                                M2MTimerObserver::Type type,
-                                bool single_shot)
+void M2MTimerPimpl::start_timer( uint64_t interval,
+                                 M2MTimerObserver::Type type,
+                                 bool single_shot)
 {
-    if(_timer) {
-        delete _timer;
-        _timer = NULL;
-    }
+    assert(interval <= INT32_MAX);
+
     _dtls_type = false;
     _intermediate_interval = 0;
     _total_interval = 0;
@@ -69,68 +107,59 @@ void M2MTimerPimpl::start_timer(uint64_t interval,
     _single_shot = single_shot;
     _interval = interval;
     _type = type;
-    _running = true;
-    os_timer_type timer_type = osTimerPeriodic;
-    if(single_shot) {
-        timer_type = osTimerOnce;
-    }
-    _timer = new RtosTimer(timer_run_c, timer_type, (void*)this);
-    _timer->start(_interval);
+    start();
 }
 
 void M2MTimerPimpl::start_dtls_timer(uint64_t intermediate_interval, uint64_t total_interval, M2MTimerObserver::Type type)
 {
-    if(_timer) {
-        delete _timer;
-        _timer = NULL;
-    }
+    assert(intermediate_interval <= INT32_MAX);
+    assert(intermediate_interval <= total_interval);
+
     _dtls_type = true;
     _intermediate_interval = intermediate_interval;
     _total_interval = total_interval;
+    _interval = _intermediate_interval;
     _status = 0;
+    _single_shot = false;
     _type = type;
-    _running = true;
-    _timer = new RtosTimer(timer_run_c, osTimerOnce, (void*)this);    
+    start();
+}
+
+void M2MTimerPimpl::start()
+{
+    int status;
+
+    status = eventOS_event_timer_request(_timer_id, ARM_LIB_SYSTEM_TIMER_EVENT,
+                                            M2MTimerPimpl::_tasklet_id,
+                                            _interval);
+    assert(status == 0);
+}
+
+void M2MTimerPimpl::cancel()
+{
+    eventOS_event_timer_cancel(_timer_id, M2MTimerPimpl::_tasklet_id);
 }
 
 void M2MTimerPimpl::stop_timer()
 {
-    _running = false;
-    if(_timer) {
-        _timer->stop();
-    }
+    _interval = 0;
+    _single_shot = true;
+    cancel();
 }
 
 void M2MTimerPimpl::timer_expired()
 {
-    if(_running) {
-        _observer.timer_expired(_type);
-    }
-}
+    tr_debug("M2MTimerPimpl::timer_expired()");
+    _status++;
+    _observer.timer_expired(_type);
 
-void M2MTimerPimpl::timer_run()
-{    
-    if (!_dtls_type) {
-        if(_final_thread) {
-            delete _final_thread;
-            _final_thread = NULL;
-        }
-        _final_thread = rtos::create_thread<M2MTimerPimpl, &M2MTimerPimpl::timer_expired>(this,osPriorityNormal, 4*1250);
-
-    } else {
-        if(_status == 0) {
-            _status++;
-
-            tr_debug("M2MTimerPimpl::timer_run - Start Final Timer");
-            _timer->start(_total_interval - _intermediate_interval);
-        } else if(_status == 1) {
-            tr_debug("M2MTimerPimpl::timer_run - Final Timer Expired");
-            if(_final_thread) {
-                delete _final_thread;
-                _final_thread = NULL;
-            }
-            _final_thread = rtos::create_thread<M2MTimerPimpl, &M2MTimerPimpl::timer_expired>(this);            
-        }
+    if ((!_dtls_type) && (!_single_shot)) {
+        // start next round of periodic timer
+        start();
+    } else if ((_dtls_type) && (!is_total_interval_passed())) {
+        // if only the intermediate time has passed, we need still wait up to total time
+        _interval = _total_interval - _intermediate_interval;
+        start();
     }
 }
 

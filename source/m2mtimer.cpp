@@ -27,7 +27,7 @@ M2MTimer::M2MTimer(M2MTimerObserver& observer)
 M2MTimer::~M2MTimer()
 {
     delete _private_impl;
-    _private_impl = NULL;
+    //_private_impl = NULL;
 }
 
 void M2MTimer::start_timer( uint64_t interval,
