@@ -13,27 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef M2M_TIMER_PIMPL_H__
 #define M2M_TIMER_PIMPL_H__
 
 #include <stdint.h>
 
 #include "mbed-client/m2mtimerobserver.h"
-#include "threadwrapper.h"
-
 
 class M2MTimerPimpl {
 private:
+
     // Prevents the use of assignment operator
     M2MTimerPimpl& operator=(const M2MTimerPimpl& other);
 
     // Prevents the use of copy constructor
     M2MTimerPimpl(const M2MTimerPimpl& other);
+public:
 
     /**
     * Constructor.
     */
-    M2MTimerPimpl(M2MTimerObserver& observer);
+    M2MTimerPimpl(M2MTimerObserver& _observer);
 
     /**
     * Destructor.
@@ -41,19 +42,19 @@ private:
     virtual ~M2MTimerPimpl();
 
     /**
-    * Starts timer
-    * @param interval Timer's interval in milliseconds
+     * Starts timer
+     * @param interval Timer's interval in milliseconds
     * @param single_shot defines if timer is ticked
     * once or is it restarted everytime timer is expired.
     */
     void start_timer(uint64_t interval, M2MTimerObserver::Type type, bool single_shot = true);
 
     /**
-    * @brief Starts timer in DTLS manner
-    * @param intermediate_interval Intermediate interval to use, must be smaller than tiotal (usually 1/4 of total)
-    * @param total_interval Total interval to use; This is the timeout value of a DTLS packet
-    * @param type Type of the timer
-    */
+     * @brief Starts timer in DTLS manner
+     * @param intermediate_interval Intermediate interval to use, must be smaller than tiotal (usually 1/4 of total)
+     * @param total_interval Total interval to use; This is the timeout value of a DTLS packet
+     * @param type Type of the timer
+     */
     void start_dtls_timer(uint64_t intermediate_interval, uint64_t total_interval, M2MTimerObserver::Type type);
 
     /**
@@ -61,6 +62,11 @@ private:
     * This cancels the ongoing timer.
     */
     void stop_timer();
+
+    /**
+    * Callback function for timer completion.
+    */
+    void timer_expired();
 
     /**
      * @brief Checks if the intermediate interval has passed
@@ -74,13 +80,12 @@ private:
      */
     bool is_total_interval_passed();
 
-public:
-    /**
-     * @brief Internal handler for timing
-     */
-    void timer_run();
+    inline int8_t get_timer_id() const;
 
-    void timer_expired();
+private:
+
+    void start();
+    void cancel();
 
 private:
     M2MTimerObserver&   _observer;
@@ -93,13 +98,19 @@ private:
     uint8_t             _status;
     bool                _dtls_type;
 
-    rtos::Thread        *_final_thread;
-    RtosTimer           *_timer;
+    // this is the timer-id of this object, used to map the
+    // timer event callback to the correct object.
+    int8_t              _timer_id;
 
-    bool                _running;
+    static int8_t       _tasklet_id;
+    static int8_t       _next_timer_id;
 
     friend class M2MTimer;
-    friend class Test_M2MTimerPimpl_mbed;
 };
+
+inline int8_t M2MTimerPimpl::get_timer_id() const
+{
+    return _timer_id;
+}
 
 #endif //M2M_TIMER_PIMPL_H__

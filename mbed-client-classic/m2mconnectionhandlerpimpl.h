@@ -41,6 +41,19 @@ class Socket;
 class M2MConnectionHandlerPimpl {
 public:
 
+    enum SocketEvent {
+        ESocketIdle        = 0x00,
+        ESocketReadytoRead = 0x02,
+        ESocketWritten     = 0x04,
+        ESocketDnsHandler  = 0x08,
+        ESocketSend        = 0x10
+    };
+
+    struct TaskIdentifier {
+        M2MConnectionHandlerPimpl *pimpl;
+        void                      *data_ptr;
+    };
+
     /**
     * @brief Constructor
     */
@@ -140,7 +153,6 @@ public:
     */
     void release_mutex();
 
-private:
     /**
     * @brief Callback handler for sending data over socket.
     */
@@ -157,19 +169,32 @@ private:
     void receive_handshake_handler();
 
     /**
-    * @brief Callback handler for receiving data for secured connection.
+    * @brief Returns true if DTLS handshake is still ongoing.
     */
-    static void thread_handler(void const *argument);
+    bool is_handshake_ongoing();
 
     /**
-    * @brief Callback handler for receiving data for secured connection.
+    * @brief Returns connection handler tasklet ID.
     */
-    void receive_event();
+    int8_t connection_tasklet_handler();
 
     /**
-    * @brief Callback handler for receiving data for secured connection.
+    * @brief Handles DNS resolving through event loop.
     */
-    void send_event();
+    void dns_handler();
+
+    /**
+    * @brief Sends data to socket through event loop.
+    */
+    void send_socket_data(uint8_t *data, uint16_t data_len);
+
+
+private:
+
+    /**
+    * @brief Callback handler for socket events.
+    */
+    void socket_event();
 
     /**
     * @brief Initialize mbed OS socket
@@ -186,13 +211,6 @@ private:
     * @brief Close and delete socket
     */
     void close_socket();
-
-    enum SocketEvent {
-        ESocketIdle        = 0x00,
-        ESocketReadytoRead = 0x02,
-        ESocketWritten     = 0x04,
-
-    };
 
 private:
     M2MConnectionHandler                        *_base;
@@ -211,12 +229,12 @@ private:
     uint16_t                                    _server_port;
     uint16_t                                    _listen_port;
     bool                                        _running;
-    rtos::Thread                                *_socket_thread;
     unsigned char                               _recv_buffer[1024];
     NetworkStack                                *_net_stack;  //doesn't own
     SocketEvent                                 _socket_event;
     SocketAddress                               *_socket_address;
-    rtos::Mutex                                  _lock;
+    static int8_t                                _tasklet_id;
+    TaskIdentifier                               _task_identifier;
 
 friend class Test_M2MConnectionHandlerPimpl;
 friend class Test_M2MConnectionHandlerPimpl_mbed;
