@@ -23,6 +23,7 @@
 
 #include "eventOS_event.h"
 #include "eventOS_event_timer.h"
+#include "eventOS_scheduler.h"
 #include "net_interface.h" // unexpected include, but that is where ARM_LIB_SYSTEM_TIMER_EVENT lives
 #include "mbed-trace/mbed_trace.h"
 
@@ -39,14 +40,20 @@ extern "C" void tasklet_func(arm_event_s *event)
     // skip the init event as there will be a timer event after
     if (event->event_type == ARM_LIB_SYSTEM_TIMER_EVENT) {
 
+        bool timer_found = false;
+        eventOS_scheduler_mutex_wait();
         int timer_count = timer_impl_list.size();
         for (int index = 0; index < timer_count; index++) {
             M2MTimerPimpl* timer = timer_impl_list[index];
             if (timer->get_timer_id() == event->event_id) {
-
+                eventOS_scheduler_mutex_release();
+                timer_found = true;
                 timer->timer_expired();
                 break;
             }
+        }
+        if(!timer_found) {
+            eventOS_scheduler_mutex_release();
         }
     }
 }
@@ -61,7 +68,7 @@ M2MTimerPimpl::M2MTimerPimpl(M2MTimerObserver& observer)
   _status(0),
   _dtls_type(false)
 {
-
+    eventOS_scheduler_mutex_wait();
     if (_tasklet_id < 0) {
         _tasklet_id = eventOS_event_handler_create(tasklet_func, ARM_LIB_SYSTEM_TIMER_EVENT);
         assert(_tasklet_id >= 0);
@@ -71,6 +78,7 @@ M2MTimerPimpl::M2MTimerPimpl(M2MTimerObserver& observer)
     _timer_id = M2MTimerPimpl::_next_timer_id++;
 
     timer_impl_list.push_back(this);
+    eventOS_scheduler_mutex_release();
 }
 
 M2MTimerPimpl::~M2MTimerPimpl()
@@ -82,16 +90,18 @@ M2MTimerPimpl::~M2MTimerPimpl()
     // so the tasklet is lost forever. Same goes with timer_impl_list, which leaks now memory.
 
     // remove the timer from object list
+    eventOS_scheduler_mutex_wait();
     int timer_count = timer_impl_list.size();
     for (int index = 0; index < timer_count; index++) {
 
         const M2MTimerPimpl* timer = timer_impl_list[index];
-        if (timer->_timer_id == _timer_id) {
+        if (timer->get_timer_id() == _timer_id) {
 
             timer_impl_list.erase(index);
             break;
         }
     }
+    eventOS_scheduler_mutex_release();
 }
 
 void M2MTimerPimpl::start_timer( uint64_t interval,

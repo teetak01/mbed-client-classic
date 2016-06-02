@@ -45,6 +45,13 @@ public:
         ESocketIdle        = 0x00,
         ESocketReadytoRead = 0x02,
         ESocketWritten     = 0x04,
+        ESocketDnsHandler  = 0x08,
+        ESocketSend        = 0x10
+    };
+
+    struct TaskIdentifier {
+        M2MConnectionHandlerPimpl *pimpl;
+        void                      *data_ptr;
     };
 
     /**
@@ -166,19 +173,28 @@ public:
     */
     bool is_handshake_ongoing();
 
+    /**
+    * @brief Returns connection handler tasklet ID.
+    */
     int8_t connection_tasklet_handler();
+
+    /**
+    * @brief Handles DNS resolving through event loop.
+    */
+    void dns_handler();
+
+    /**
+    * @brief Sends data to socket through event loop.
+    */
+    void send_socket_data(uint8_t *data, uint16_t data_len);
+
 
 private:
 
     /**
-    * @brief Callback handler for receiving data for secured connection.
+    * @brief Callback handler for socket events.
     */
-    void receive_event();
-
-    /**
-    * @brief Callback handler for receiving data for secured connection.
-    */
-    void send_event();
+    void socket_event();
 
     /**
     * @brief Initialize mbed OS socket
@@ -217,7 +233,8 @@ private:
     NetworkStack                                *_net_stack;  //doesn't own
     SocketEvent                                 _socket_event;
     SocketAddress                               *_socket_address;
-    static int8_t                                _connection_event_handler;
+    static int8_t                                _tasklet_id;
+    TaskIdentifier                               _task_identifier;
 
 friend class Test_M2MConnectionHandlerPimpl;
 friend class Test_M2MConnectionHandlerPimpl_mbed;
