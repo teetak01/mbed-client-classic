@@ -22,15 +22,12 @@
 #include "mbed-client/m2mconnectionsecurity.h"
 #include "nsdl-c/sn_nsdl.h"
 
-#include "threadwrapper.h"
 #include "Socket.h"
-#include <string>
 
 
 class M2MConnectionSecurity;
 class M2MConnectionHandler;
 class M2MSecurity;
-class Socket;
 
 /**
  * @brief M2MConnectionHandlerPimpl.

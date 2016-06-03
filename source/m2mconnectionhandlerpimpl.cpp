@@ -19,9 +19,6 @@
 #include "mbed-client/m2msecurity.h"
 #include "mbed-client/m2mconnectionhandler.h"
 
-#include "threadwrapper.h"
-#include "mbed_error.h"
-
 #include "NetworkStack.h"
 #include "UDPSocket.h"
 #include "TCPSocket.h"
