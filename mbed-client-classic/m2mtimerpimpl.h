@@ -17,7 +17,7 @@
 #ifndef M2M_TIMER_PIMPL_H__
 #define M2M_TIMER_PIMPL_H__
 
-#include <stdint.h>
+#include "ns_types.h"
 
 #include "mbed-client/m2mtimerobserver.h"
 
