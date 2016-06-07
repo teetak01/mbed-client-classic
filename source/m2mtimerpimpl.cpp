@@ -25,6 +25,7 @@
 #include "eventOS_event_timer.h"
 #include "eventOS_scheduler.h"
 #include "net_interface.h" // unexpected include, but that is where ARM_LIB_SYSTEM_TIMER_EVENT lives
+#include "ns_hal_init.h"
 #include "mbed-trace/mbed_trace.h"
 
 #define TRACE_GROUP "mClt"
@@ -68,6 +69,7 @@ M2MTimerPimpl::M2MTimerPimpl(M2MTimerObserver& observer)
   _status(0),
   _dtls_type(false)
 {
+    ns_hal_init(NULL, 1024, NULL, NULL);
     eventOS_scheduler_mutex_wait();
     if (_tasklet_id < 0) {
         _tasklet_id = eventOS_event_handler_create(tasklet_func, ARM_LIB_SYSTEM_TIMER_EVENT);
