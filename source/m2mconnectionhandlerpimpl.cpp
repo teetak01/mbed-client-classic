@@ -23,7 +23,6 @@
 #include "UDPSocket.h"
 #include "TCPSocket.h"
 
-#include "ns_types.h"
 #include "eventOS_event.h"
 #include "eventOS_scheduler.h"
 
@@ -52,14 +51,6 @@ extern "C" void connection_tasklet_event_handler(arm_event_s *event)
                     pimpl->receive_handshake_handler();
                 } else {
                     pimpl->receive_handler();
-                }
-            }
-            break;
-        case M2MConnectionHandlerPimpl::ESocketWritten:
-            tr_debug("connection_tasklet_event_handler - ESocketWritten");
-            if(pimpl) {
-                if(!pimpl->is_handshake_ongoing()) {
-                    pimpl->send_handler();
                 }
             }
             break;
@@ -328,7 +319,6 @@ int M2MConnectionHandlerPimpl::send_to_socket(const unsigned char *buf, size_t l
 {
     tr_debug("M2MConnectionHandlerPimpl::send_to_socket len - %d", len);
     int size = -1;    
-    _socket_event = ESocketWritten;
     if(is_tcp_connection()) {
         size = ((TCPSocket*)_socket)->send(buf,len);
     } else {
@@ -344,6 +334,9 @@ int M2MConnectionHandlerPimpl::send_to_socket(const unsigned char *buf, size_t l
     }else if(size < 0){
         return -1;
     }else{
+        if(!_is_handshaking) {
+            _observer.data_sent();
+        }
         return size;
     }
 }

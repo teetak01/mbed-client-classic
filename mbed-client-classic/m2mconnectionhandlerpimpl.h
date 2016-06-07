@@ -16,6 +16,7 @@
 #ifndef M2M_CONNECTION_HANDLER_PIMPL_H__
 #define M2M_CONNECTION_HANDLER_PIMPL_H__
 
+#include "ns_types.h"
 #include "mbed-client/m2mconfig.h"
 #include "mbed-client/m2minterface.h"
 #include "mbed-client/m2mconnectionobserver.h"
@@ -39,11 +40,10 @@ class M2MConnectionHandlerPimpl {
 public:
 
     enum SocketEvent {
-        ESocketIdle        = 0x00,
-        ESocketReadytoRead = 0x02,
-        ESocketWritten     = 0x04,
-        ESocketDnsHandler  = 0x08,
-        ESocketSend        = 0x10
+        ESocketIdle         = 0x00,
+        ESocketReadytoRead  = 0x02,
+        ESocketDnsHandler   = 0x04,
+        ESocketSend         = 0x08
     };
 
     struct TaskIdentifier {
