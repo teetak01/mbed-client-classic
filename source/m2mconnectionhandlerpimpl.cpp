@@ -329,13 +329,14 @@ int M2MConnectionHandlerPimpl::send_to_socket(const unsigned char *buf, size_t l
         if(_is_handshaking) {
             return M2MConnectionHandler::CONNECTION_ERROR_WANTS_WRITE;
         } else {
-            _observer.data_sent();
             return len;
         }
     }else if(size < 0){
         return -1;
     }else{
-         _observer.data_sent();
+        if(!_is_handshaking) {
+            _observer.data_sent();
+        }
         return size;
     }
 }
