@@ -24,11 +24,12 @@
 #include "eventOS_event.h"
 #include "eventOS_event_timer.h"
 #include "eventOS_scheduler.h"
-#include "net_interface.h" // unexpected include, but that is where ARM_LIB_SYSTEM_TIMER_EVENT lives
 #include "ns_hal_init.h"
 #include "mbed-trace/mbed_trace.h"
 
 #define TRACE_GROUP "mClt"
+
+#define MBED_CLIENT_TIMER_EVENT 10
 
 int8_t M2MTimerPimpl::_tasklet_id = -1;
 
@@ -39,7 +40,7 @@ static m2m::Vector<M2MTimerPimpl*> timer_impl_list;
 extern "C" void tasklet_func(arm_event_s *event)
 {
     // skip the init event as there will be a timer event after
-    if (event->event_type == ARM_LIB_SYSTEM_TIMER_EVENT) {
+    if (event->event_type == MBED_CLIENT_TIMER_EVENT) {
 
         bool timer_found = false;
         eventOS_scheduler_mutex_wait();
@@ -72,7 +73,7 @@ M2MTimerPimpl::M2MTimerPimpl(M2MTimerObserver& observer)
     ns_hal_init(NULL, 1024, NULL, NULL);
     eventOS_scheduler_mutex_wait();
     if (_tasklet_id < 0) {
-        _tasklet_id = eventOS_event_handler_create(tasklet_func, ARM_LIB_SYSTEM_TIMER_EVENT);
+        _tasklet_id = eventOS_event_handler_create(tasklet_func, MBED_CLIENT_TIMER_EVENT);
         assert(_tasklet_id >= 0);
     }
 
@@ -141,7 +142,7 @@ void M2MTimerPimpl::start()
 {
     int status;
 
-    status = eventOS_event_timer_request(_timer_id, ARM_LIB_SYSTEM_TIMER_EVENT,
+    status = eventOS_event_timer_request(_timer_id, MBED_CLIENT_TIMER_EVENT,
                                             M2MTimerPimpl::_tasklet_id,
                                             _interval);
     assert(status == 0);
