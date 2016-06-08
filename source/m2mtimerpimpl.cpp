@@ -31,6 +31,12 @@
 
 #define MBED_CLIENT_TIMER_EVENT 10
 
+#ifdef MBED_CONF_MBED_CLIENT_EVENT_LOOP_SIZE
+#define MBED_CLIENT_EVENT_LOOP_SIZE MBED_CONF_MBED_CLIENT_EVENT_LOOP_SIZE
+#else MBED_CLIENT_EVENT_LOOP_SIZE 1024
+#define
+#endif
+
 int8_t M2MTimerPimpl::_tasklet_id = -1;
 
 int8_t M2MTimerPimpl::_next_timer_id = 1;
@@ -70,7 +76,7 @@ M2MTimerPimpl::M2MTimerPimpl(M2MTimerObserver& observer)
   _status(0),
   _dtls_type(false)
 {
-    ns_hal_init(NULL, 1024, NULL, NULL);
+    ns_hal_init(NULL, MBED_CLIENT_EVENT_LOOP_SIZE, NULL, NULL);
     eventOS_scheduler_mutex_wait();
     if (_tasklet_id < 0) {
         _tasklet_id = eventOS_event_handler_create(tasklet_func, MBED_CLIENT_TIMER_EVENT);
