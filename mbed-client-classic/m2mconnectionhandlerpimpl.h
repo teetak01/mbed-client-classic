@@ -209,6 +209,11 @@ private:
     */
     void close_socket();
 
+    /**
+    * @brief Enables keepalive for TCP connections.
+    */
+    void enable_keepalive();
+
 private:
     M2MConnectionHandler                        *_base;
     M2MConnectionObserver                       &_observer;

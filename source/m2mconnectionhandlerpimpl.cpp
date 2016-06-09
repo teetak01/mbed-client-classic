@@ -209,6 +209,7 @@ void M2MConnectionHandlerPimpl::dns_handler()
         }
     }
     if(!_is_handshaking) {
+        enable_keepalive();
         _observer.address_ready(_address,
                                 _server_type,
                                 _address._port);
@@ -384,6 +385,7 @@ void M2MConnectionHandlerPimpl::receive_handshake_handler()
         } else if( ret == 0 ){
             _is_handshaking = false;
             _use_secure_connection = true;
+            enable_keepalive();
             _observer.address_ready(_address,
                                     _server_type,
                                     _server_port);
@@ -517,3 +519,22 @@ void M2MConnectionHandlerPimpl::close_socket()
     tr_debug("M2MConnectionHandlerPimpl::close_socket() - OUT");
 }
 
+void M2MConnectionHandlerPimpl::enable_keepalive()
+{
+#if MBED_CLIENT_TCP_KEEPALIVE_TIME
+    if(is_tcp_connection()) {
+        int keepalive = MBED_CLIENT_TCP_KEEPALIVE_TIME;
+        int enable = 1;
+        tr_debug("M2MConnectionHandlerPimpl::resolve_hostname - keepalive %d s\n", keepalive);
+        if(_socket->setsockopt(1,NSAPI_KEEPALIVE,&enable,sizeof(enable)) != 0) {
+            tr_error("M2MConnectionHandlerPimpl::enable_keepalive - setsockopt fail to Set Keepalive\n");
+        }
+        if(_socket->setsockopt(1,NSAPI_KEEPINTVL,&keepalive,sizeof(keepalive)) != 0) {
+            tr_error("M2MConnectionHandlerPimpl::enable_keepalive - setsockopt fail to Set Keepalive TimeInterval\n");
+        }
+        if(_socket->setsockopt(1,NSAPI_KEEPIDLE,&keepalive,sizeof(keepalive)) != 0) {
+            tr_error("M2MConnectionHandlerPimpl::enable_keepalive - setsockopt fail to Set Keepalive Time\n");
+        }
+    }
+#endif
+}
