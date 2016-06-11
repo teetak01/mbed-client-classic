@@ -274,15 +274,14 @@ void M2MConnectionHandlerPimpl::send_socket_data(uint8_t *data,
             memmove(d+4, data, data_len);
             ret = ((TCPSocket*)_socket)->send(d,d_len);
             free(d);
-            free(data);
         }else {
             ret = ((UDPSocket*)_socket)->sendto(*_socket_address,data, data_len);
-            free(data);
         }
         if (ret > 0) {
             success = true;
         }
     }
+    free(data);
 
     if (!success) {
         _observer.socket_error(M2MConnectionHandler::SOCKET_SEND_ERROR, true);
