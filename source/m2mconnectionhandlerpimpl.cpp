@@ -230,16 +230,7 @@ bool M2MConnectionHandlerPimpl::send_data(uint8_t *data,
     if (address == NULL || data == NULL) {
         return false;
     }
-    _task_identifier.data_ptr = data;
-    arm_event_s event;
-    event.receiver = M2MConnectionHandlerPimpl::_tasklet_id;
-    event.sender = 0;
-    event.event_type = ESocketSend;
-    event.data_ptr = &_task_identifier;
-    event.event_data = data_len;
-    event.priority = ARM_LIB_HIGH_PRIORITY_EVENT;
-
-    eventOS_event_send(&event);
+    send_socket_data(data,data_len);
     return true;
 }
 
