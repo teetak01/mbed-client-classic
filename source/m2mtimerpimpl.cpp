@@ -168,7 +168,6 @@ void M2MTimerPimpl::stop_timer()
 
 void M2MTimerPimpl::timer_expired()
 {
-    tr_debug("M2MTimerPimpl::timer_expired()");
     _status++;
     _observer.timer_expired(_type);
 
