@@ -18,6 +18,7 @@
 
 #include "ns_types.h"
 #include "mbed-client/m2mconfig.h"
+#include "mbed-client/m2mconstants.h"
 #include "mbed-client/m2minterface.h"
 #include "mbed-client/m2mconnectionobserver.h"
 #include "mbed-client/m2mconnectionsecurity.h"
@@ -231,7 +232,7 @@ private:
     uint16_t                                    _server_port;
     uint16_t                                    _listen_port;
     bool                                        _running;
-    unsigned char                               _recv_buffer[1024];
+    unsigned char                               _recv_buffer[BUFFER_LENGTH];
     NetworkStack                                *_net_stack;  //doesn't own
     SocketEvent                                 _socket_event;
     SocketAddress                               *_socket_address;
