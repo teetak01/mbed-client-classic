@@ -24,7 +24,7 @@
 #include "mbed-client/m2mconnectionsecurity.h"
 #include "nsdl-c/sn_nsdl.h"
 
-#include "Socket.h"
+#include "NetworkSocketAPI/Socket.h"
 
 
 class M2MConnectionSecurity;
