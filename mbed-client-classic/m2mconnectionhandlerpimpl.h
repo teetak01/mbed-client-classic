@@ -234,7 +234,6 @@ private:
     bool                                        _running;
     unsigned char                               _recv_buffer[BUFFER_LENGTH];
     NetworkStack                                *_net_stack;  //doesn't own
-    SocketEvent                                 _socket_event;
     SocketAddress                               *_socket_address;
     static int8_t                                _tasklet_id;
     TaskIdentifier                               _task_identifier;

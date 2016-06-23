@@ -90,7 +90,6 @@ M2MConnectionHandlerPimpl::M2MConnectionHandlerPimpl(M2MConnectionHandler* base,
  _listen_port(0),
  _running(false),
  _net_stack(0),
- _socket_event(ESocketIdle),
  _socket_address(0)
 {
     memset(&_address_buffer, 0, sizeof _address_buffer);
@@ -146,8 +145,7 @@ bool M2MConnectionHandlerPimpl::resolve_server_address(const String& server_addr
     event.data_ptr = &_task_identifier;
     event.priority = ARM_LIB_HIGH_PRIORITY_EVENT;
 
-    eventOS_event_send(&event);
-    return true;
+    return eventOS_event_send(&event) == 0 ? true : false;
 }
 
 void M2MConnectionHandlerPimpl::dns_handler()
@@ -234,7 +232,6 @@ bool M2MConnectionHandlerPimpl::send_data(uint8_t *data,
     bool success = false;
     uint8_t *buffer = (uint8_t*)malloc(data_len);
     if(buffer) {
-        success = true;
         memcpy(buffer, data, data_len);
         _task_identifier.data_ptr = buffer;
         arm_event_s event;
@@ -245,7 +242,7 @@ bool M2MConnectionHandlerPimpl::send_data(uint8_t *data,
         event.event_data = data_len;
         event.priority = ARM_LIB_HIGH_PRIORITY_EVENT;
 
-        eventOS_event_send(&event);
+        success = eventOS_event_send(&event) == 0 ? true : false;
 
     }
     return success;
@@ -298,11 +295,13 @@ void M2MConnectionHandlerPimpl::socket_event()
     arm_event_s event;
     event.receiver = M2MConnectionHandlerPimpl::_tasklet_id;
     event.sender = 0;
-    event.event_type = _socket_event;
+    event.event_type = ESocketReadytoRead;
     event.data_ptr = &_task_identifier;
     event.priority = ARM_LIB_HIGH_PRIORITY_EVENT;
-    _socket_event = ESocketReadytoRead;
-    eventOS_event_send(&event);
+    int8_t error = eventOS_event_send(&event);
+    if(error != 0) {
+    	_observer.socket_error(M2MConnectionHandler::SOCKET_READ_ERROR, true);
+    }
 }
 
 bool M2MConnectionHandlerPimpl::start_listening_for_data()
