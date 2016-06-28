@@ -19,7 +19,7 @@
 #include "mbed-client/m2msecurity.h"
 #include "mbed-client/m2mconnectionhandler.h"
 
-#include "NetworkStack.h"
+#include "NetworkInterface.h"
 #include "UDPSocket.h"
 #include "TCPSocket.h"
 
@@ -89,7 +89,7 @@ M2MConnectionHandlerPimpl::M2MConnectionHandlerPimpl(M2MConnectionHandler* base,
  _server_port(0),
  _listen_port(0),
  _running(false),
- _net_stack(0),
+ _net_iface(0),
  _socket_address(0)
 {
     memset(&_address_buffer, 0, sizeof _address_buffer);
@@ -115,7 +115,7 @@ M2MConnectionHandlerPimpl::~M2MConnectionHandlerPimpl()
         delete _socket;
         _socket = 0;
     }
-    _net_stack = 0;
+    _net_iface = 0;
     delete _security_impl;
 }
 
@@ -130,13 +130,13 @@ bool M2MConnectionHandlerPimpl::resolve_server_address(const String& server_addr
                                                        M2MConnectionObserver::ServerType server_type,
                                                        const M2MSecurity* security)
 {
-    if (!_net_stack) {
+    if (!_net_iface) {
         return false;
     }
     _security = security;
     _server_port = server_port;
     _server_type = server_type;
-    _socket_address = new SocketAddress(_net_stack,server_address.c_str(), server_port);
+    _socket_address = new SocketAddress(_net_iface,server_address.c_str(), server_port);
 
     arm_event_s event;
     event.receiver = M2MConnectionHandlerPimpl::_tasklet_id;
@@ -377,7 +377,7 @@ void M2MConnectionHandlerPimpl::handle_connection_error(int error)
 void M2MConnectionHandlerPimpl::set_platform_network_handler(void *handler)
 {
     tr_debug("M2MConnectionHandlerPimpl::set_platform_network_handler");
-    _net_stack = (NetworkStack*)handler;
+    _net_iface = (NetworkInterface*)handler;
 }
 
 void M2MConnectionHandlerPimpl::receive_handshake_handler()
@@ -487,7 +487,7 @@ void M2MConnectionHandlerPimpl::init_socket()
 
     if(is_tcp_connection()) {
        tr_debug("M2MConnectionHandlerPimpl::init_socket - Using TCP");
-        _socket = new TCPSocket(_net_stack);
+        _socket = new TCPSocket(_net_iface);
         if(_socket) {
             _socket->attach(this, &M2MConnectionHandlerPimpl::socket_event);
         } else {
@@ -496,7 +496,7 @@ void M2MConnectionHandlerPimpl::init_socket()
         }
     } else {
        tr_debug("M2MConnectionHandlerPimpl::init_socket - Using UDP - port %d", _listen_port);
-        _socket = new UDPSocket(_net_stack);
+        _socket = new UDPSocket(_net_iface);
         if(_socket) {
             _socket->bind(_listen_port);
             _socket->attach(this, &M2MConnectionHandlerPimpl::socket_event);

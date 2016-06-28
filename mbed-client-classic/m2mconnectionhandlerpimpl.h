@@ -233,7 +233,7 @@ private:
     uint16_t                                    _listen_port;
     bool                                        _running;
     unsigned char                               _recv_buffer[BUFFER_LENGTH];
-    NetworkStack                                *_net_stack;  //doesn't own
+    NetworkInterface                            *_net_iface;  //doesn't own
     SocketAddress                               *_socket_address;
     static int8_t                                _tasklet_id;
     TaskIdentifier                               _task_identifier;
