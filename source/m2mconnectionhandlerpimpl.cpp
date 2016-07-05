@@ -64,13 +64,17 @@ extern "C" void connection_tasklet_event_handler(arm_event_s *event)
             tr_debug("connection_tasklet_event_handler - ESocketSend");
             if(pimpl) {
                 pimpl->send_socket_data((uint8_t*)task_id->data_ptr,(uint16_t)event->event_data);
-                free(task_id->data_ptr);
+                if (task_id->data_ptr) {
+                    free(task_id->data_ptr);
+                }
             }
             break;
         default:
             break;
     }
-    free(task_id);
+    if (task_id) {
+        free(task_id);
+    }
 }
 
 M2MConnectionHandlerPimpl::M2MConnectionHandlerPimpl(M2MConnectionHandler* base, M2MConnectionObserver &observer,
