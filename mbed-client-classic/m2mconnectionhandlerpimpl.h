@@ -236,7 +236,6 @@ private:
     NetworkInterface                            *_net_iface;  //doesn't own
     SocketAddress                               *_socket_address;
     static int8_t                                _tasklet_id;
-    TaskIdentifier                               _task_identifier;
 
 friend class Test_M2MConnectionHandlerPimpl;
 friend class Test_M2MConnectionHandlerPimpl_mbed;
