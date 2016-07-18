@@ -115,12 +115,14 @@ M2MConnectionHandlerPimpl::M2MConnectionHandlerPimpl(M2MConnectionHandler* base,
 
 M2MConnectionHandlerPimpl::~M2MConnectionHandlerPimpl()
 {
+    tr_debug("M2MConnectionHandlerPimpl::~M2MConnectionHandlerPimpl()");
     if (_socket) {
         delete _socket;
         _socket = 0;
     }
     _net_iface = 0;
     delete _security_impl;
+    tr_debug("M2MConnectionHandlerPimpl::~M2MConnectionHandlerPimpl() - OUT");
 }
 
 bool M2MConnectionHandlerPimpl::bind_connection(const uint16_t listen_port)
@@ -134,14 +136,14 @@ bool M2MConnectionHandlerPimpl::resolve_server_address(const String& server_addr
                                                        M2MConnectionObserver::ServerType server_type,
                                                        const M2MSecurity* security)
 {
+    tr_debug("M2MConnectionHandlerPimpl::resolve_server_address()");
     if (!_net_iface) {
         return false;
     }
     _security = security;
     _server_port = server_port;
     _server_type = server_type;
-    _socket_address = new SocketAddress(_net_iface,server_address.c_str(), server_port);
-
+    _server_address = server_address;
     TaskIdentifier* task = (TaskIdentifier*)malloc(sizeof(TaskIdentifier));
     if (!task) {
         return false;
@@ -154,13 +156,13 @@ bool M2MConnectionHandlerPimpl::resolve_server_address(const String& server_addr
     event.event_type = ESocketDnsHandler;
     event.data_ptr = task;
     event.priority = ARM_LIB_HIGH_PRIORITY_EVENT;
-
     return eventOS_event_send(&event) == 0 ? true : false;
 }
 
 void M2MConnectionHandlerPimpl::dns_handler()
 {
     tr_debug("M2MConnectionHandlerPimpl::dns_handler()");
+    _socket_address = new SocketAddress(_net_iface,_server_address.c_str(), _server_port);
     if(*_socket_address) {
         _address._address = (void*)_socket_address->get_ip_address();
         tr_debug("IP Address %s",_socket_address->get_ip_address());
@@ -251,7 +253,6 @@ bool M2MConnectionHandlerPimpl::send_data(uint8_t *data,
         return false;
     }
     task->pimpl = this;
-
     memcpy(buffer, data, data_len);
     task->data_ptr = buffer;
     arm_event_s event;
