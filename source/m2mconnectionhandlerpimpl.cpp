@@ -102,7 +102,7 @@ M2MConnectionHandlerPimpl::M2MConnectionHandlerPimpl(M2MConnectionHandler* base,
     _address._address = _address_buffer;
 
     if (_network_stack != M2MInterface::LwIP_IPv4) {
-        error("ConnectionHandler: Unsupported network stack, only IPv4 is currently supported");
+        tr_error("ConnectionHandler: Unsupported network stack, only IPv4 is currently supported");
     }
     _running = true;
     tr_debug("M2MConnectionHandlerPimpl::M2MConnectionHandlerPimpl() - Initializing thread");
