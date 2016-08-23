@@ -116,6 +116,10 @@ M2MConnectionHandlerPimpl::M2MConnectionHandlerPimpl(M2MConnectionHandler* base,
 M2MConnectionHandlerPimpl::~M2MConnectionHandlerPimpl()
 {
     tr_debug("M2MConnectionHandlerPimpl::~M2MConnectionHandlerPimpl()");
+    if(_socket_address) {
+        delete _socket_address;
+        _socket_address = NULL;
+    }
     if (_socket) {
         delete _socket;
         _socket = 0;
@@ -162,6 +166,10 @@ bool M2MConnectionHandlerPimpl::resolve_server_address(const String& server_addr
 void M2MConnectionHandlerPimpl::dns_handler()
 {
     tr_debug("M2MConnectionHandlerPimpl::dns_handler()");
+    if(_socket_address) {
+        delete _socket_address;
+       _socket_address = NULL;
+    }
     _socket_address = new SocketAddress(_net_iface,_server_address.c_str(), _server_port);
     if(*_socket_address) {
         _address._address = (void*)_socket_address->get_ip_address();
