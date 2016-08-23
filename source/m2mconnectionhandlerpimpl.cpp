@@ -116,6 +116,10 @@ M2MConnectionHandlerPimpl::M2MConnectionHandlerPimpl(M2MConnectionHandler* base,
 M2MConnectionHandlerPimpl::~M2MConnectionHandlerPimpl()
 {
     tr_debug("M2MConnectionHandlerPimpl::~M2MConnectionHandlerPimpl()");
+    if(_socket_address) {
+        delete _socket_address;
+        _socket_address = NULL;
+    }
     if (_socket) {
         delete _socket;
         _socket = 0;
@@ -168,10 +172,10 @@ void M2MConnectionHandlerPimpl::dns_handler()
     }
     _socket_address = new SocketAddress(_net_iface,_server_address.c_str(), _server_port);
     if(*_socket_address) {
-        _address._length = strlen(_socket_address->get_ip_address());
-        memcpy(_address._address,_socket_address->get_ip_address(),_address._length);
+        _address._address = (void*)_socket_address->get_ip_address();
         tr_debug("IP Address %s",_socket_address->get_ip_address());
-        tr_debug("Port %d",_socket_address->get_port());        
+        tr_debug("Port %d",_socket_address->get_port());
+        _address._length = strlen((char*)_address._address);
         _address._port = _socket_address->get_port();
         _address._stack = _network_stack;
     } else {
