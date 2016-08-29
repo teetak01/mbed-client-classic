@@ -234,7 +234,7 @@ private:
     bool                                        _running;
     unsigned char                               _recv_buffer[BUFFER_LENGTH];
     NetworkInterface                            *_net_iface;  //doesn't own
-    SocketAddress                               *_socket_address;
+    SocketAddress                               _socket_address;
     static int8_t                                _tasklet_id;
     String                                      _server_address;
 
